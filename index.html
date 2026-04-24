@@ -153,12 +153,12 @@
             // --- שלב ד: שליחת הבקשה לשרת (Google Apps Script) ---
             try {
                 // משתמשים ב-fetch כדי לשלוח בקשת POST
-                const response = await fetch('https://script.google.com/macros/s/AKfycbxKq4PTeytXO8YeDquXS9cdQDEOhKiCeEpEHIxLcnu2xn67I4Io9bWCNMIW7gsDJsqYyQ/exec', { // <--- החלף את הכתובת הזו ב-URL של ה-Web App שלך!
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxKq4PTeytXO8YeDquXS9cdQDEOhKiCeEpEHIxLcnu2xn67I4Io9bWCNMIW7gsDJsqYyQ/exec', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json' // מודיעים לשרת שאנחנו שולחים JSON
+                    'Content-Type': 'application/json' // <--- זה מה שגורם לבעיה
                     },
-                    body: JSON.stringify(payload) // הופכים את אובייקט ה-JS למחרוזת JSON
+                    body: JSON.stringify(payload)
                 });
 
                 // קוראים את תגובת השרת וממירים אותה מ-JSON חזרה לאובייקט JS
