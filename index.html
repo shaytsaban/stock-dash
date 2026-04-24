@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <!-- תגית המטא לתמיכה בתווים בעברית -->
+    <meta charset="UTF-8">
+    <!-- תגית המטא להתאמה למסכים של מובייל -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>לוח בקרה פיננסי</title>
+    
+    <!-- חיבור לספריית Tailwind CSS דרך CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- הגדרות עיצוב מותאמות אישית (צבעים שמתאימים לעולם הפיננסי) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'finance-bg': '#0f172a',      // רקע כהה (סלייט כהה מאוד)
+                        'finance-card': '#1e293b',    // צבע כרטיס הטופס
+                        'finance-accent': '#10b981',  // ירוק זוהר (אמרלד) לכפתורים והדגשות
+                        'finance-hover': '#059669'    // ירוק כהה יותר למעבר עכבר
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<!-- גוף הדף עם רקע כהה שממרכז את התוכן אנכית ואופקית -->
+<body class="bg-finance-bg min-h-screen flex items-center justify-center p-4 font-sans text-gray-200">
+
+    <!-- הכרטיס (Card) המרכזי שמכיל את הטופס -->
+    <div class="w-full max-w-md bg-finance-card p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+        
+        <!-- כותרת העמוד -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-finance-accent mb-2">לוח בקרה פיננסי</h1>
+            <p class="text-gray-400 text-sm">משוך נתוני מניות היסטוריים ישירות לגיליון שלך</p>
+        </div>
+
+        <!-- טופס הקלט - ה-ID יאפשר לנו לתפוס אותו ב-JS -->
+        <form id="stockForm" class="space-y-6">
+            
+            <!-- שדה סימול מניה -->
+            <div>
+                <label for="ticker" class="block text-sm font-medium text-gray-300 mb-2">סימול מניה (Ticker)</label>
+                <input 
+                    type="text" 
+                    id="ticker" 
+                    name="ticker" 
+                    placeholder="לדוגמה: AAPL" 
+                    required
+                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-finance-accent focus:border-transparent transition-all"
+                >
+            </div>
+
+            <!-- שדה תאריך התחלה -->
+            <div>
+                <label for="startDate" class="block text-sm font-medium text-gray-300 mb-2">תאריך התחלה</label>
+                <input 
+                    type="date" 
+                    id="startDate" 
+                    name="startDate" 
+                    required
+                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-finance-accent focus:border-transparent transition-all"
+                >
+            </div>
+
+            <!-- שדה תאריך סיום -->
+            <div>
+                <label for="endDate" class="block text-sm font-medium text-gray-300 mb-2">תאריך סיום</label>
+                <input 
+                    type="date" 
+                    id="endDate" 
+                    name="endDate" 
+                    required
+                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-finance-accent focus:border-transparent transition-all"
+                >
+            </div>
+
+            <!-- כפתור שליחה ואזור טעינה -->
+            <div class="pt-2">
+                <!-- הכפתור עצמו, מכיל גם ספינר שמוסתר כברירת מחדל -->
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    class="w-full bg-finance-accent hover:bg-finance-hover text-gray-900 font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-finance-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <!-- ספינר טעינה (מוסתר כברירת מחדל) -->
+                    <svg id="spinner" class="animate-spin -mr-1 ml-3 h-5 w-5 text-gray-900 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <!-- טקסט הכפתור שישתנה בזמן טעינה -->
+                    <span id="btnText">משוך נתונים לגיליון</span>
+                </button>
+            </div>
+            
+            <!-- אזור להצגת הודעות סטטוס / הצלחה / שגיאה -->
+            <div id="statusMessage" class="text-center text-sm mt-4 h-5"></div>
+            
+        </form>
+    </div>
+
+    <!-- סקריפט ה-JavaScript -->
+    <script>
+        // תופסים את אלמנט הטופס לפי ה-ID שלו
+        const form = document.getElementById('stockForm');
+        
+        // תופסים את אלמנטי הקלט כדי לקרוא מהם את הערכים אחר כך
+        const tickerInput = document.getElementById('ticker');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        // תופסים את אלמנטי ממשק המשתמש שצריכים להשתנות בזמן טעינה
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // מוסיפים 'מאזין' (Event Listener) לאירוע שליחת הטופס
+        form.addEventListener('submit', async function(e) {
+            
+            // 1. מונעים את רענון הדף ברירת המחדל שקורה בעת שליחת טופס
+            e.preventDefault();
+
+            // --- שלב א: שינוי ממשק למצב "טוען" ---
+            submitBtn.disabled = true; // משביתים את הכפתור כדי שלא ילחצו פעמיים
+            spinner.classList.remove('hidden'); // מסירים את ההסתרה מהספינר (הוא יופיע ויסתובב)
+            btnText.textContent = 'טוען נתונים, אנא המתן...'; // משנים את טקסט הכפתור
+            statusMessage.textContent = ''; // מנקים הודעות קודמות
+            statusMessage.className = 'text-center text-sm mt-4 h-5'; // מאפסים צבעי שגיאה/הצלחה
+
+            // --- שלב ב: איסוף הנתונים מהשדות ---
+            const ticker = tickerInput.value.trim().toUpperCase(); // מוריד רווחים והופך לאותיות גדולות
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+
+            // בודקים שהתאריך התחלה הוא לפני תאריך הסיום (וולידציה בסיסית)
+            if (new Date(startDate) > new Date(endDate)) {
+                showError('תאריך ההתחלה חייב להיות לפני תאריך הסיום!');
+                return; // עוצרים את הפונקציה כאן
+            }
+
+            // --- שלב ג: אריזת הנתונים למבנה JSON ---
+            const payload = {
+                ticker: ticker,
+                startDate: startDate,
+                endDate: endDate
+            };
+
+            // --- שלב ד: שליחת הבקשה לשרת (Google Apps Script) ---
+            try {
+                // משתמשים ב-fetch כדי לשלוח בקשת POST
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxKq4PTeytXO8YeDquXS9cdQDEOhKiCeEpEHIxLcnu2xn67I4Io9bWCNMIW7gsDJsqYyQ/exec', { // <--- החלף את הכתובת הזו ב-URL של ה-Web App שלך!
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // מודיעים לשרת שאנחנו שולחים JSON
+                    },
+                    body: JSON.stringify(payload) // הופכים את אובייקט ה-JS למחרוזת JSON
+                });
+
+                // קוראים את תגובת השרת וממירים אותה מ-JSON חזרה לאובייקט JS
+                const data = await response.json();
+
+                // בודקים אם הסטטוס מהשרת הוא הצלחה (כפי שהגדרנו ב-Apps Script)
+                if (data.status === 'success') {
+                    // מציגים הודעת הצלחה ירוקה
+                    statusMessage.textContent = 'הנתונים נמשכו בהצלחה ועודכנו בגיליון!';
+                    statusMessage.classList.add('text-finance-accent');
+                } else {
+                    // אם חזר סטטוס שגיאה מהשרת עצמו
+                    throw new Error(data.message || 'אירעה שגיאה לא ידועה בשרת');
+                }
+
+            } catch (error) {
+                // אם יש בעיית רשת, או שהשרת לא ענה, או שחזרה שגיאה - נכנסים לכאן
+                showError('שגיאה: ' + error.message);
+            } finally {
+                // --- שלב ה: החזרת ממשק המשתמש למצב רגיל ---
+                // הקוד כאן רץ תמיד, בין אם הצליח ובין אם נכשל
+                submitBtn.disabled = false; // מפעילים את הכפתור בחזרה
+                spinner.classList.add('hidden'); // מסתירים את הספינר
+                btnText.textContent = 'משוך נתונים לגיליון'; // מחזירים את הטקסט המקורי
+            }
+        });
+
+        // פונקציית עזר להצגת הודעות שגיאה בצבע אדום
+        function showError(message) {
+            statusMessage.textContent = message;
+            statusMessage.classList.add('text-red-400');
+            // מחזירים את הממשק למצב רגיל במקרה של שגיאה (כי הפונקציה יכולה לקרוא לפני ה-finally במקרה של וולידציה)
+            submitBtn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.textContent = 'משוך נתונים לגיליון';
+        }
+    </script>
+</body>
+</html>
